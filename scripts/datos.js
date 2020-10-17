@@ -30,7 +30,7 @@ var sistema = {
 
                                         "archivo": [
                                         
-                                                    {"permiso":"-rw-r-----","duenio":0,"grupo":4,"fecha":"2020-10-01","nombre":"file-1"},
+                                                    {"permiso":"-rw-rwx---","duenio":0,"grupo":4,"fecha":"2020-10-01","nombre":"file-1"},
                                                     {"permiso":"-rw-r-----","duenio":1,"grupo":4,"fecha":"2020-09-11","nombre":"file-2"},
                                                     {"permiso":"-rw-r-----","duenio":2,"grupo":5,"fecha":"2020-08-01","nombre":"file-3"},
                                                     {"permiso":"-rw-r---w-","duenio":3,"grupo":5,"fecha":"2020-07-01","nombre":"file-4"}
