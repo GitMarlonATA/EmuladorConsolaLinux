@@ -49,7 +49,7 @@ function procesarComando ( comando )
 	}
 	else
 	{
-
+		console.log(comandoParametros[0]);
 		switch(comandoParametros[0]){
 			case 'clear':
 				procesarClear(comandoParametros);
@@ -66,7 +66,18 @@ function procesarComando ( comando )
 			case 'sudo':
 				procesarSudo(comandoParametros,comando.value);
 				break;
-			
+			case 'chmod':
+				procesarChmod(comandoParametros,comando.value);
+				break;
+			case 'ls':
+				procesarLs(comandoParametros,comando.value);
+				break;
+			case 'cat':
+				procesarCat(comandoParametros,comando.value);
+				break;
+			case 'nano':
+				procesarNano(comandoParametros,comando.value);
+				break;
 			default:
 				addConsola(document.getElementById( "prompt" ).innerHTML + comando.value);
 				addConsola("uqsh: comando no reconocido : "+ comando.value);
@@ -80,7 +91,131 @@ function procesarComando ( comando )
 	
 }
 
-function procesarSudo(comandoParametros,comando){
+function procesarCat(comandoParametro,comando)
+{
+	let usuarioActual = sistema.usuarioActual;
+	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
+	let archivo = buscarArchivo(comandoParametro[1]);
+	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
+	if(archivo!==null)
+	{
+		addConsola(comandoActual);
+
+		if(verificarPermisoLectura(archivo,comandoActual,usuario,usuarioActual))
+		{
+			addConsola("Leyendo el contenido del archivo...");
+		}
+		else
+		{
+			addConsola("El usuario no tiene permisos");
+		}
+	}
+	else
+	{
+		addConsola(comandoActual);
+		addConsola("El archivo no existe");
+	}
+}
+
+function procesarNano(comandoParametro,comando)
+{
+	let usuarioActual = sistema.usuarioActual;
+	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
+	let archivo = buscarArchivo(comandoParametro[1]);
+	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
+	if(archivo!==null)
+	{
+		addConsola(comandoActual);
+
+		if(verificarPermisoEscritura(archivo,comandoActual,usuario,usuarioActual))
+		{
+			addConsola("Escribiendo en el archivo...");
+		}
+		else
+		{
+			addConsola("El usuario no tiene permisos");
+		}
+	}
+	else
+	{
+		addConsola("El archivo no existe");
+	}
+}
+
+function procesarLs(comandoParamanetro, comando)
+{
+	let	archivos = sistema.maquina[sistema.maquinaActual].disco[0].archivo;
+	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
+	addConsola(comandoActual);
+	if(comandoParamanetro.length>1)
+	{
+		if(comandoParamanetro[1]==="-l")
+		{
+			addConsola("Permisos | Duenio | Grupo | Fecha | Nombre archivo");
+			for( let i = 0; i < archivos.length ; i++)
+			{
+				
+				addConsola(archivos[i].permiso + " | " + 
+				archivos[i].duenio + " | " + archivos[i].grupo 
+				+ " | " + archivos[i].fecha + " | " + archivos[i].nombre);
+			}
+		}
+		else
+		{
+			addConsola("error");
+		}
+	}
+	else
+	{
+		addConsola("Nombre archivo");
+		for( let i = 0; i < archivos.length ; i++)
+		{
+			addConsola(archivos[i].nombre);
+		}
+	}
+
+}
+
+function procesarChmod(comandoParametros,comando)
+{
+	let usuarioActual = sistema.usuarioActual;
+	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
+	let archivo = buscarArchivo(comandoParametros[2]);
+	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
+	if(archivo!==null)
+	{
+		if(parseInt(comandoParametros[1]) <= 777)
+		{
+			console.log(verificarPermisoEscritura(archivo,comandoActual,usuario,usuarioActual));
+			if(verificarPermisoEscritura(archivo,comandoActual,usuario,usuarioActual))
+			{
+				let permisos = definirPermisosChmod(comandoParametros[1]);
+				let posarchivo = buscarArchivoPosicion(comandoParametros[2]);
+				sistema.maquina[sistema.maquinaActual].disco[0].archivo[posarchivo].permiso = permisos;
+				addConsola(comandoActual);
+				console.log(sistema);
+			}
+			else
+			{
+				addConsola(comandoActual);
+				addConsola("Error Permisos Escritura");
+			}
+		}
+		else
+		{
+			addConsola(comandoActual);
+			addConsola("Error comando permisos");
+		}
+	}
+	else
+	{
+		addConsola(comandoActual);
+		addConsola("El archivo no existe");
+	}
+}
+
+function procesarSudo(comandoParametros,comando)
+{
 
 	if(comandoParametros[1]=="chown"){
 
@@ -138,10 +273,9 @@ function buscarUsuario(nombreUsuario){
 
 }
 
-function buscarArchivoPosicion(nombreArchivo){
-
-	let maquinaActual = sistema.maquinaActual;
-	let	archivos = sistema.maquina[maquinaActual].disco[0].archivo;
+function buscarArchivoPosicion(nombreArchivo)
+{
+	let	archivos = sistema.maquina[sistema.maquinaActual].disco[0].archivo;
 		
 	for (let i = 0; i < archivos.length; i++) {
 			if(nombreArchivo===archivos[i].nombre){
@@ -160,55 +294,100 @@ function procesarTouch(comandoParametros,comando){
 	let usuarioActual = sistema.usuarioActual;
 	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
 	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
-		if(archivo){
-			if(archivo.duenio == usuarioActual){
-				if(archivo.permiso.charAt(2)=='w')
-				{
-					addConsola(comandoActual);
-				}
-				else
-				{
-					addConsola(comandoActual);
-					addConsola("el usuario no tiene el permiso para modificar el archivo");
-				}
+
+	if(archivo!==null)
+	{
+		if(verificarPermisoEscritura(archivo,comandoActual,usuario,usuarioActual))
+		{
+			addConsola(comandoActual);
+			addConsola("MODIFICANDO ARCHIVO");
+		}
+	}
+	else
+	{
+		let f = new Date();
+		sistema.maquina[sistema.maquinaActual].disco[0].archivo.push( {"permiso":"-rw-r-----","duenio":usuarioActual,"grupo":usuario.grupo,"fecha":f.getFullYear()+"-"+f.getMonth() +1+"-"+f.getDate(),"nombre":nombreArchivo});
+	}
+}
+
+function verificarPermisoEscritura(archivo,comandoActual,usuario,usuarioActual)
+{
+	if(archivo.duenio == usuarioActual)
+	{
+		if(archivo.permiso.charAt(2)==='w')
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		  if(usuario.grupo==archivo.grupo)
+		  {
+			if(archivo.permiso.charAt(5)==='w')
+			{
+				return true;
 			}
 			else
 			{
-				  if(usuario.grupo==archivo.grupo)
-				  {
-					if(archivo.permiso.charAt(5)=='w')
-					{
-						addConsola(comandoActual);
-					}
-					else
-					{
-						addConsola(comandoActual);
-						addConsola("el usuario no tiene el permiso para modificar el archivo");
-					}
-				}
-				else
-				{
-					if(archivo.permiso.charAt(8)=='w')
-					{
-						addConsola(comandoActual);
-					}
-					else
-					{
-						addConsola(comandoActual);
-						addConsola("el usuario no tiene el permiso para modificar el archivo");
-					}
-				}
+				return false;
 			}
 		}
 		else
 		{
-			let f = new Date();
-			sistema.maquina[sistema.maquinaActual].disco[0].archivo.push( {"permiso":"-rw-r-----","duenio":usuarioActual,"grupo":usuario.grupo,"fecha":f.getFullYear()+"-"+f.getMonth() +1+"-"+f.getDate(),"nombre":nombreArchivo});
+			if(archivo.permiso.charAt(8)==='w')
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
+	}
+
 }
 
-function verificarPermisoEscritura(){
-
+function verificarPermisoLectura(archivo,comandoActual,usuario,usuarioActual)
+{
+	if(archivo.duenio == usuarioActual){
+		if(archivo.permiso.charAt(1)=='r')
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		  if(usuario.grupo==archivo.grupo)
+		  {
+			if(archivo.permiso.charAt(4)=='r')
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			if(archivo.permiso.charAt(7)=='r')
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+	}
 
 }
 
@@ -282,6 +461,41 @@ function procesarClear(comandoParametros){
 		limpiarConsola();
 	}
 
+}
+
+function definirPermisosChmod(permisos)
+{
+	let resultadoPermisos = "-";
+	let longitudPermisos = permisos.length;
+
+	for (let i = 0; i < longitudPermisos; i++)
+	{
+		let permiso = permisos.charAt(i);
+		permiso = parseInt(permiso);
+		resultadoPermisos += definirPermiso(permiso);
+	}
+
+	return resultadoPermisos;
+
+}
+
+function definirPermiso(permiso)
+{
+	let resultadoPermiso = "";
+
+	switch (permiso)
+	{
+		case 0: resultadoPermiso = "---"; break;
+		case 1: resultadoPermiso = "--x"; break;
+		case 2: resultadoPermiso = "-w-"; break;
+		case 3: resultadoPermiso = "-wx"; break;
+		case 4: resultadoPermiso = "r--"; break;
+		case 5: resultadoPermiso = "r-x"; break;
+		case 6: resultadoPermiso = "rw-"; break;
+		case 7: resultadoPermiso = "rwx"; break;
+	}
+
+	return resultadoPermiso;
 }
 
 
