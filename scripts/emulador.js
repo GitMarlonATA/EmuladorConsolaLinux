@@ -75,7 +75,7 @@ function procesarComando ( comando )
 			case 'cat':
 				procesarCat(comandoParametros,comando.value);
 				break;
-			case 'nanoo':
+			case 'nano':
 				procesarNano(comandoParametros,comando.value);
 				break;
 			default:
