@@ -149,12 +149,26 @@ function procesarScp(comandoParametro,comando)
 
 	if(archivoD !== "" && archivoO !== "" && ip !== "" && usuario !== "")
 	{
-		let validacion = validarIpUser(ip,usuario,comando);
-		if(validacion.length>0)
+		let archivo = buscarArchivo(archivoO);
+
+		if(archivo!==null)
 		{
-			let results = validacion.split(";");
-			sistema.maquina[results[0]].disco[0].archivo.push(archivoO);
-			console.log(sistema);
+			let validacion = validarIpUser(ip,usuario,comando);
+			
+			if(validacion.length>0)
+			{
+				let results = validacion.split(";");
+				sistema.maquina[results[0]].disco[0].archivo.push(archivoO);
+				console.log(sistema);
+			}
+			else
+			{
+
+			}
+		}
+		else
+		{
+			addConsola("scp: " + archivoO + " : No such file or directory");
 		}
 	}
 }
