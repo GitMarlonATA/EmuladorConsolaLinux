@@ -122,6 +122,7 @@ function procesarScp(comandoParametro,comando)
 	let usuario = "";
 	let archivoO = "";
 	let archivoD = "";
+	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
 
 	if(comandoParametro[1].includes("@"))
 	{
@@ -154,16 +155,21 @@ function procesarScp(comandoParametro,comando)
 		if(archivo!==null)
 		{
 			let validacion = validarIpUser(ip,usuario,comando);
-			
+
 			if(validacion.length>0)
 			{
-				let results = validacion.split(";");
-				sistema.maquina[results[0]].disco[0].archivo.push(archivoO);
-				console.log(sistema);
-			}
-			else
-			{
 
+				if(verificarPermisoLectura(archivo,comandoActual,usuario,sistema.usuarioActual))
+				{
+					let results = validacion.split(";");
+					sistema.maquina[results[0]].disco[0].archivo.push(archivoO);
+					addConsola(comandoActual);
+					console.log(sistema);
+				}
+				else
+				{
+					addConsola("Permision denied");
+				}
 			}
 		}
 		else
@@ -509,6 +515,7 @@ function procesarSudo(comandoParametros,comando)
 		}
 		else
 		{
+			addConsola(document.getElementById( "prompt" ).innerHTML+ comando);
 			addConsola("error");
 		}
 		
@@ -602,6 +609,7 @@ function procesarTouch(comandoParametros,comando){
 	{
 		let f = new Date();
 		sistema.maquina[sistema.maquinaActual].disco[0].archivo.push( {"permiso":"-rw-r-----","duenio":usuarioActual,"grupo":usuario.grupo,"fecha":f.getFullYear()+"-"+f.getMonth() +1+"-"+f.getDate(),"nombre":nombreArchivo});
+		addConsola(comandoActual);
 	}
 }
 
