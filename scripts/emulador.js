@@ -65,15 +65,12 @@ function procesarComando ( comando )
 			case 'clear':
 				procesarClear(comandoParametros);
 				break;
-
 			case 'logout':
 				procesarLogout(comandoParametros);
 				break;
-
 			case 'touch':
 				procesarTouch(comandoParametros,comando.value);
 				break;
-
 			case 'sudo':
 				procesarSudo(comandoParametros,comando.value);
 				break;
@@ -283,7 +280,7 @@ function procesarExit(comando)
 {
 	if(maquinaSsh!==-1 && userSsh !== -1)
 	{
-		console.log("entra exit");
+		
 		let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
 
 		sistema.maquinaActual = maquinaSsh;
@@ -464,12 +461,9 @@ function procesarRm(comandoParametro,comando)
 
 		if(verificarPermisoEscritura(archivo,comandoActual,usuario,usuarioActual))
 		{
-			let posarchivo = buscarArchivoPosicion(comandoParametro[1],sistema.maquinaActual);
-			console.log(posarchivo);
-			console.log(sistema.maquina[sistema.maquinaActual].disco[0].archivo);
+			let posarchivo = buscarArchivoPosicion(comandoParametro[1]);
 			sistema.maquina[sistema.maquinaActual].disco[0].archivo.splice(posarchivo,1);
-			console.log(sistema.maquina[sistema.maquinaActual].disco[0].archivo);
-			console.log(sistema);
+			
 		}
 		else
 		{
@@ -602,12 +596,8 @@ function procesarSudo(comandoParametros,comando)
 
 		let posarchivo = buscarArchivoPosicion(comandoParametros[4],sistema.maquinaActual);
 		let posgrupo = buscarGrupo(comandoParametros[3]);
-		let posusuario = buscarUsuario(comandoParametros[2],sistema.maquinaActual);
-
-		console.log(posarchivo);
-		console.log(posgrupo);
-		console.log(posusuario);
-		 
+		let posusuario = buscarUsuario(comandoParametros[2]);
+ 
 		if(posgrupo>=0 && posusuario>=0 && posarchivo>=0)
 		{
 			sistema.maquina[sistema.maquinaActual].disco[0].archivo[posarchivo].grupo = posgrupo;
@@ -616,8 +606,26 @@ function procesarSudo(comandoParametros,comando)
 		}
 		else
 		{
+			if(posusuario<0){
+
 			addConsola(document.getElementById( "prompt" ).innerHTML+ comando);
-			addConsola("error");
+			addConsola("chown: usuario inválido: &lt;&lt;"+String(comandoParametros[2])+":"+String(comandoParametros[3])+"&gt;&gt;");
+
+			
+
+			}else if(posgrupo<0){
+
+				addConsola(document.getElementById( "prompt" ).innerHTML+ comando);
+				addConsola("chown: grupo inválido: &lt;&lt;"+String(comandoParametros[2])+":"+String(comandoParametros[3])+"&gt;&gt;");
+
+			}else{
+
+			addConsola(document.getElementById( "prompt" ).innerHTML+ comando);
+			addConsola("chown: no se puede acceder a '"+String(comandoParametros[4])+"' No existe el archivo o el directorio");
+
+			}
+
+			
 		}
 		
 	}
@@ -633,8 +641,6 @@ function buscarGrupo(nombreGrupo)
 {
 
 	let grupos = sistema.maquina[sistema.maquinaActual].grupo;
-
-
 
 	for (let i = 0; i < grupos.length; i++) 
 	{
@@ -708,7 +714,7 @@ function procesarTouch(comandoParametros,comando){
 		if(verificarPermisoEscritura(archivo,comandoActual,usuario,usuarioActual))
 		{
 			addConsola(comandoActual);
-			addConsola("MODIFICANDO ARCHIVO");
+			addConsola("Modificanco archivo...");
 		}
 	}
 	else
@@ -900,7 +906,7 @@ function procesarLogout(comandoParametros){
 function procesarLogin(comandoParametros)
 {
 	let user = String(comandoParametros).trim();
-	let nombreMaquina = verificarUsuarioEnSistema(user);
+	let nombreMaquina = verificarUsuarioEnPrimeraMaquina(user);
 
 	if(nombreMaquina!=null)
 	{
@@ -915,9 +921,35 @@ function procesarLogin(comandoParametros)
 }
 
 /**
+ * Método que permite verificar la existencia de un usuario sobre la primera máquina
+ * @param {*} nombreUsuario variable que representa el nombre del usuario
+ */
+function verificarUsuarioEnPrimeraMaquina(nombreUsuario)
+{
+		let usuarios= sistema.maquina[0].usuario;
+
+		for (let j = 0; j < usuarios.length; j++) 
+		{
+			let nombre = usuarios[j].nombre;
+
+				if(nombre===nombreUsuario)
+				{
+					actualizarUsiarioYMaquinaActual(0,j);
+					return sistema.maquina[0].nombre;
+				}
+		}
+
+
+
+
+	return null;
+}
+
+/**
  * Método que permite verificar la existencia de un usuario sobre el sistema
  * @param {*} nombreUsuario variable que representa el nombre del usuario
  */
+
 function verificarUsuarioEnSistema(nombreUsuario)
 {
 
