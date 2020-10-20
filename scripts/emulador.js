@@ -839,6 +839,35 @@ function verificarUsuarioEnPrimeraMaquina(nombreUsuario)
 }
 
 /**
+ * Método que permite verificar la existencia de un usuario sobre el sistema
+ * @param {*} nombreUsuario variable que representa el nombre del usuario
+ */
+
+function verificarUsuarioEnSistema(nombreUsuario)
+{
+
+	var maquinas = sistema.maquina;
+
+		for (let i = 0; i < maquinas.length; i++) 
+		{
+			let usuarios= maquinas[i].usuario;
+
+			for (let j = 0; j < usuarios.length; j++) 
+			{
+					let nombre = usuarios[j].nombre;
+
+					if(nombre===nombreUsuario)
+					{
+						actualizarUsiarioYMaquinaActual(i,j);
+						return maquinas[i].nombre;
+					}
+				}
+				
+			}
+	return null;
+}
+
+/**
  * Método que permite actualizar el usuario actual y la máquina actual del sistema
  * @param {*} i posición de la máquina actual
  * @param {*} j posición del usuario actual
