@@ -120,7 +120,8 @@ function procesarScp(comandoParametro,comando)
 	let archivoO = "";
 	let archivoD = "";
 	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
-
+	let traerRemoto = false;
+	let llevarRemoto = false;
 	if(comandoParametro[1].includes("@"))
 	{
 		let valoresParametros = comandoParametro[1].split("@");
@@ -129,50 +130,145 @@ function procesarScp(comandoParametro,comando)
 		ip = valoresParam2[0];
 		archivoO = valoresParam2[1];
 		archivoD = comandoParametro[2];
+		traerRemoto = true;
 	}
 	else if(comandoParametro[2].includes("@"))
 	{
+		console.log(comandoParametro);
 		archivoO = comandoParametro[1];
 		let valoresParametros = comandoParametro[2].split("@");
 		usuario = valoresParametros[0];
-		let valoresParam2 = valoresParametros[2].split(":");
+		let valoresParam2 = valoresParametros[1].split(":");
 		ip = valoresParam2[0];
 		archivoD = valoresParam2[1];
+		llevarRemoto = true;
+
 	}
 	else
 	{
-		addConsola(document.getElementById( "prompt" ).innerHTML + comando);
+		addConsola(comandoActual);
 		addConsola("bash: "+ comando + " : comand not found");
 	}
-
+	console.log("archivoD");
+	console.log(archivoD);
+	console.log("archivoO");
+	console.log(archivoO);
+	console.log("ip");
+	console.log(ip);
+	console.log("usuario");
+	console.log(usuario);
 	if(archivoD !== "" && archivoO !== "" && ip !== "" && usuario !== "")
 	{
-		let archivo = buscarArchivo(archivoO);
-
-		if(archivo!==null)
+		let validacion = validarIpUser(ip,usuario,comando);
+		let validacionSplit = validacion.split(";") ;
+		usuario = buscarUsuario(usuario,validacionSplit[0]);
+		if(validacion.length>0)
 		{
-			let validacion = validarIpUser(ip,usuario,comando);
-
-			if(validacion.length>0)
+			let archivoOrigen;
+			if(traerRemoto)
 			{
+				archivoOrigen = buscarArchivo(archivoO,validacionSplit[0]);
+				console.log("archivoOrigen");
+				console.log(archivoOrigen);
 
-				if(verificarPermisoLectura(archivo,comandoActual,usuario,sistema.usuarioActual))
+				if(archivoOrigen!== null)
 				{
-					let results = validacion.split(";");
-					sistema.maquina[results[0]].disco[0].archivo.push(archivoO);
-					addConsola(comandoActual);
-					console.log(sistema);
+					traerDocumentoDesdeRemoto(archivoOrigen,comandoActual,usuario,sistema.usuarioActual,archivoD,validacionSplit[0],validacionSplit[1]);
 				}
 				else
 				{
-					addConsola("Permision denied");
+					addConsola(comandoActual);
+					addConsola("scp: " + archivoO + " : No such file or directory");
 				}
+				
+			}
+			else if(llevarRemoto)
+			{
+				archivoOrigen = buscarArchivo(archivoO,sistema.maquinaActual);
+				console.log("archivoOrigen");
+				console.log(archivoOrigen);
+				if(archivoOrigen!==null)
+				{
+					llevarDocumentoARemoto(archivoOrigen,comandoActual,usuario,sistema.usuarioActual,archivoD,validacionSplit[0]);
+				}
+				else
+				{
+					addConsola(comandoActual);
+					addConsola("scp: " + archivoO + " : No such file or directory");
+				}
+			}
+		}
+	}
+}
+
+function traerDocumentoDesdeRemoto(archivo,comandoActual,usuario,usuarioActual,archivoD,maquinaRemoto,usuarioRemoto)
+{
+	if(verificarPermisoLectura(archivo,comandoActual,usuario,usuarioRemoto))
+	{
+		if(archivoD !== ".")
+		{
+			let archivoDestino = buscarArchivo(archivoD,sistema.maquinaActual);
+
+			if(archivoDestino !== null)
+			{
+				let posicionArchivoDestino = buscarArchivoPosicion(archivoDestino.nombre, sistema.maquinaActual);
+				sistema.maquina[sistema.maquinaActual].disco[0].archivo.splice(posicionArchivoDestino,1);
+				archivo.nombre = archivoD;
+				sistema.maquina[sistema.maquinaActual].disco[0].archivo.push(archivo);
+			}
+			else
+			{
+				sistema.maquina[sistema.maquinaActual].disco[0].archivo.push(archivo);
 			}
 		}
 		else
 		{
-			addConsola("scp: " + archivoO + " : No such file or directory");
+			sistema.maquina[sistema.maquinaActual].disco[0].archivo.push(archivo);
 		}
+
+		addConsola(comandoActual);
+		console.log(sistema);
+	}
+	else
+	{
+		addConsola("Permision denied");
+	}
+
+
+
+}
+
+function llevarDocumentoARemoto(archivo,comandoActual,usuario,usuarioActual,archivoD,maquinaRemoto)
+{
+	if(verificarPermisoLectura(archivo,comandoActual,usuario,usuarioActual))
+	{
+		if(archivoD !== ".")
+		{
+			let archivoDestino = buscarArchivo(archivoD,maquinaRemoto);
+
+			if(archivoDestino !== null)
+			{
+				let posicionArchivoDestino = buscarArchivoPosicion(archivoDestino.nombre, maquinaRemoto);
+				sistema.maquina[maquinaRemoto].disco[0].archivo.splice(posicionArchivoDestino,1);
+				archivo.nombre = archivoD;
+				sistema.maquina[maquinaRemoto].disco[0].archivo.push(archivo);
+			}
+			else
+			{
+				sistema.maquina[maquinaRemoto].disco[0].archivo.push(archivo);
+			}
+		}
+		else
+		{
+			sistema.maquina[maquinaRemoto].disco[0].archivo.push(archivo);
+		}
+		
+		addConsola(comandoActual);
+		console.log(sistema);
+	}
+	else
+	{
+		addConsola("Permision denied");
 	}
 }
 
@@ -275,6 +371,11 @@ function validarIpUser(ip,user,comando)
 		addConsola(comandoActual);
 		addConsola("ssh: no se puede resolver el nombre " + ip);
 	}
+	else if(userValid===false)
+	{
+		addConsola(comandoActual);
+		addConsola("ssh: no se puede resolver el nombre " + usuario);
+	}
 	else
 	{
 		return "";
@@ -290,7 +391,7 @@ function procesarCat(comandoParametro,comando)
 {
 	let usuarioActual = sistema.usuarioActual;
 	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
-	let archivo = buscarArchivo(comandoParametro[1]);
+	let archivo = buscarArchivo(comandoParametro[1],sistema.maquinaActual);
 	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
 	if(archivo!==null)
 	{
@@ -321,7 +422,7 @@ function procesarEjecutar(comandoParametro,comando)
 {
 	let usuarioActual = sistema.usuarioActual;
 	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
-	let archivo = buscarArchivo(comandoParametro[1]);
+	let archivo = buscarArchivo(comandoParametro[1],sistema.maquinaActual);
 	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
 	if(archivo!==null)
 	{
@@ -352,7 +453,7 @@ function procesarRm(comandoParametro,comando)
 {
 	let usuarioActual = sistema.usuarioActual;
 	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
-	let archivo = buscarArchivo(comandoParametro[1]);
+	let archivo = buscarArchivo(comandoParametro[1],sistema.maquinaActual);
 	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
 	if(archivo!==null)
 	{
@@ -385,7 +486,7 @@ function procesarNano(comandoParametro,comando)
 {
 	let usuarioActual = sistema.usuarioActual;
 	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
-	let archivo = buscarArchivo(comandoParametro[1]);
+	let archivo = buscarArchivo(comandoParametro[1],sistema.maquinaActual);
 	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
 	if(archivo!==null)
 	{
@@ -449,7 +550,7 @@ function procesarChmod(comandoParametros,comando)
 {
 	let usuarioActual = sistema.usuarioActual;
 	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
-	let archivo = buscarArchivo(comandoParametros[2]);
+	let archivo = buscarArchivo(comandoParametros[2],sistema.maquinaActual);
 	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
 	if(archivo!==null)
 	{
@@ -459,7 +560,7 @@ function procesarChmod(comandoParametros,comando)
 			if(verificarPermisoEscritura(archivo,comandoActual,usuario,usuarioActual))
 			{
 				let permisos = definirPermisosChmod(comandoParametros[1]);
-				let posarchivo = buscarArchivoPosicion(comandoParametros[2]);
+				let posarchivo = buscarArchivoPosicion(comandoParametros[2],sistema.maquinaActual);
 				sistema.maquina[sistema.maquinaActual].disco[0].archivo[posarchivo].permiso = permisos;
 				addConsola(comandoActual);
 				console.log(sistema);
@@ -493,7 +594,7 @@ function procesarSudo(comandoParametros,comando)
 
 	if(comandoParametros[1]=="chown"){
 
-		let posarchivo = buscarArchivoPosicion(comandoParametros[4]);
+		let posarchivo = buscarArchivoPosicion(comandoParametros[4],sistema.maquinaActual);
 		let posgrupo = buscarGrupo(comandoParametros[3]);
 		let posusuario = buscarUsuario(comandoParametros[2]);
  
@@ -559,12 +660,15 @@ function buscarGrupo(nombreGrupo)
  * Método que permite buscar un usuario sobre la máquina actual
  * @param {*} nombreUsuario nombre del usuario
  */
-function buscarUsuario(nombreUsuario){
+function buscarUsuario(nombreUsuario,maquina)
+{
 
-	let usuarios = sistema.maquina[sistema.maquinaActual].usuario;
+	let usuarios = sistema.maquina[maquina].usuario;
 
-	for (let i = 0; i < usuarios.length; i++) {
-		if(nombreUsuario===usuarios[i].nombre){
+	for (let i = 0; i < usuarios.length; i++) 
+	{
+		if(nombreUsuario===usuarios[i].nombre)
+		{
 			return i;
 		}
 	}
@@ -577,15 +681,17 @@ function buscarUsuario(nombreUsuario){
  * Método que permite buscar la posición de un archivo sobre la máquina
  * @param {*} nombreArchivo nombre del archivo
  */
-function buscarArchivoPosicion(nombreArchivo)
+function buscarArchivoPosicion(nombreArchivo,maquinaActual)
 {
-	let	archivos = sistema.maquina[sistema.maquinaActual].disco[0].archivo;
+	let	archivos = sistema.maquina[maquinaActual].disco[0].archivo;
 		
-	for (let i = 0; i < archivos.length; i++) {
-			if(nombreArchivo===archivos[i].nombre){
-				return i
-			}
+	for (let i = 0; i < archivos.length; i++) 
+	{
+		if(nombreArchivo===archivos[i].nombre)
+		{
+			return i;
 		}
+	}
 	return -1;
 
 }
@@ -598,7 +704,7 @@ function buscarArchivoPosicion(nombreArchivo)
 function procesarTouch(comandoParametros,comando){
 
 	let nombreArchivo = comandoParametros[1];
-	let archivo = buscarArchivo(nombreArchivo); 
+	let archivo = buscarArchivo(nombreArchivo,sistema.maquinaActual); 
 	let usuarioActual = sistema.usuarioActual;
 	let usuario = sistema.maquina[sistema.maquinaActual].usuario[usuarioActual];
 	let comandoActual = document.getElementById( "prompt" ).innerHTML+ comando;
@@ -769,17 +875,18 @@ function verificarPermisoLectura(archivo,comandoActual,usuario,usuarioActual)
  * Método que permite buscar un archivo sobre la máquina
  * @param {*} nombreArchivo variable que representa el nombre del archivo
  */
-function buscarArchivo(nombreArchivo)
+function buscarArchivo(nombreArchivo,maquinaActual)
 {
 
-	let maquinaActual = sistema.maquinaActual;
 	let	archivos = sistema.maquina[maquinaActual].disco[0].archivo;
 		
-	for (let i = 0; i < archivos.length; i++) {
-			if(nombreArchivo===archivos[i].nombre){
-				return archivos[i];
-			}
+	for (let i = 0; i < archivos.length; i++) 
+	{
+		if(nombreArchivo===archivos[i].nombre)
+		{
+			return archivos[i];
 		}
+	}
 	return null;
 }
 
